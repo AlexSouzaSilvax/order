@@ -17,18 +17,14 @@ import com.order.repository.ProdutoRepository;
 
 import jakarta.transaction.Transactional;
 
-/**
- * Classe de serviço para a manipulação dos pedidos.
- * Contém métodos para criar, processar e consultar pedidos, bem como outros métodos auxiliares.
- */
 @Service
 public class PedidoService {
 
     @Autowired
-    private PedidoRepository pedidoRepository; // Repositório de Pedido para acessar o banco de dados
+    private PedidoRepository pedidoRepository;
 
     @Autowired
-    private ProdutoRepository produtoRepository; // Repositório de Produto para acessar o banco de dados
+    private ProdutoRepository produtoRepository;
 
     /**
      * Retorna todos os pedidos, incluindo seus produtos associados.
@@ -40,34 +36,6 @@ public class PedidoService {
     }
 
     /**
-     * Cria um novo pedido com produtos e um desconto aplicado.
-     * 
-     * @return Pedido criado e salvo no banco de dados
-     */
-    @Transactional
-    public Pedido criarPedido() {
-        // Criação de produtos
-        Produto produto1 = criarProduto("Hyundai Creta 2025", 150000.00);
-        Produto produto2 = criarProduto("Honda HRV 2018", 98000.00);
-
-        // Lista de produtos para o pedido
-        List<Produto> produtos = List.of(produto1, produto2);
-
-        Pedido pedido = new Pedido();
-        pedido.setDescontoPercentual(10.0); // 10% de desconto
-
-        // Criando os produtos do pedido
-        List<PedidoProduto> pedidoProdutos = produtos.stream()
-                .map(produto -> criarPedidoProduto(pedido, produto, 2)) // 2 unidades de cada produto
-                .collect(Collectors.toList());
-
-        pedido.setPedidoProdutos(pedidoProdutos); // Associando os produtos ao pedido
-        pedido.setValor(calcularValorTotal(pedidoProdutos)); // Calculando o valor total do pedido
-
-        return pedidoRepository.save(pedido); // Salvando o pedido no banco de dados
-    }
-
-    /**
      * Processa uma lista de pedidos externos, validando e criando novos pedidos.
      * 
      * @param pedidosExternos Lista de pedidos externos a serem processados
@@ -75,22 +43,20 @@ public class PedidoService {
     @Transactional
     public void processarPedidosExternos(List<PedidoExternoA> pedidosExternos) {
         pedidosExternos.forEach(pedidoExternoA -> {
-            // Verifica se o pedido já existe no banco de dados para evitar duplicação
-            if (!existePedidoByNumero(pedidoExternoA.getNumeroPedido())) {
-                Pedido pedido = PedidoMapper.fromPedidoExternoA(pedidoExternoA); // Mapeia o pedido externo para um pedido interno
 
-                // Salvando os produtos associados ao pedido
+            if (!existePedidoByNumero(pedidoExternoA.getNumeroPedido())) {
+                Pedido pedido = PedidoMapper.fromPedidoExternoA(pedidoExternoA);
+
                 List<Produto> produtosSalvos = produtoRepository.saveAll(pedidoExternoA.getProdutos());
 
-                // Criando os produtos do pedido
                 List<PedidoProduto> pedidoProdutos = produtosSalvos.stream()
-                        .map(produto -> criarPedidoProduto(pedido, produto, 1)) // 1 unidade de cada produto
+                        .map(produto -> criarPedidoProduto(pedido, produto, 1))
                         .collect(Collectors.toList());
 
-                pedido.setPedidoProdutos(pedidoProdutos); // Associando os produtos ao pedido
-                pedido.setValor(calcularValorTotal(pedidoProdutos)); // Calculando o valor total do pedido
+                pedido.setPedidoProdutos(pedidoProdutos);
+                pedido.setValor(calcularValorTotal(pedidoProdutos));
 
-                save(pedido); // Salvando o pedido no banco de dados
+                save(pedido);
             }
         });
     }
@@ -138,24 +104,10 @@ public class PedidoService {
     // Métodos Auxiliares
 
     /**
-     * Cria um novo produto e o salva no banco de dados.
-     * 
-     * @param nome O nome do produto
-     * @param valor O valor do produto
-     * @return O produto criado e salvo
-     */
-    private Produto criarProduto(String nome, Double valor) {
-        Produto produto = new Produto();
-        produto.setNome(nome);
-        produto.setValor(valor);
-        return produtoRepository.save(produto);
-    }
-
-    /**
      * Cria um novo pedido produto associado ao pedido e produto fornecidos.
      * 
-     * @param pedido O pedido ao qual o produto será associado
-     * @param produto O produto a ser associado
+     * @param pedido     O pedido ao qual o produto será associado
+     * @param produto    O produto a ser associado
      * @param quantidade A quantidade do produto
      * @return O PedidoProduto criado
      */
