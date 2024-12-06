@@ -35,4 +35,15 @@ public class PedidoProduto {
 
     private int quantidade;
 
+    
+    public PedidoProduto(Pedido pedido, Produto produto, int quantidade) {
+        this.pedido = pedido;
+        this.produto = produto;
+        this.quantidade = quantidade;
+    }
+
+
+    public PedidoProduto() {
+    }
+
 }

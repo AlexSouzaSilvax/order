@@ -16,4 +16,9 @@ public class PedidoExternoA {
     private Double descontoPercentual;
     private LocalDateTime dataCadastro = LocalDateTime.now();
     private List<Produto> produtos = new ArrayList<>();
+
+    public PedidoExternoA(String numeroPedido, List<Produto> listaProdutos) {
+        this.numeroPedido = numeroPedido;
+        this.produtos = listaProdutos;
+    }
 }
