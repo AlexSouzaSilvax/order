@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.apache.kafka.clients.producer.KafkaProducer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +29,9 @@ public class PedidoService {
 
     @Autowired
     private ProdutoRepository produtoRepository;
+
+    @Autowired
+    private KafkaProducer kafkaProducer;
 
     /**
      * Retorna todos os pedidos, incluindo seus produtos associados.
@@ -61,6 +65,13 @@ public class PedidoService {
                 pedido.setValor(calcularValorTotal(pedidoProdutos));
 
                 save(pedido);
+
+                System.out.println("Importando pedidos do Externo A...");
+
+                // Envia uma mensagem para o Kafka após a importação
+                // kafkaProducer.sendMensagemImportacao("Pedidos do Externo A importados com
+                // sucesso!");
+
             }
         });
     }
