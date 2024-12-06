@@ -5,6 +5,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.order.model.Pedido;
@@ -31,8 +34,8 @@ public class PedidoService {
      * 
      * @return Lista de pedidos com seus produtos
      */
-    public List<Pedido> findAll() {
-        return pedidoRepository.findAllPedidosComProdutos();
+    public Page<Pedido> findAll(Pageable pageable) {
+        return pedidoRepository.findAllPedidosComProdutos(pageable);
     }
 
     /**
@@ -41,6 +44,7 @@ public class PedidoService {
      * @param pedidosExternos Lista de pedidos externos a serem processados
      */
     @Transactional
+    @Async
     public void processarPedidosExternos(List<PedidoExternoA> pedidosExternos) {
         pedidosExternos.forEach(pedidoExternoA -> {
 
