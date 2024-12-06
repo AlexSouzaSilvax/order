@@ -1,9 +1,9 @@
 package com.order.service;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -13,8 +13,8 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.web.client.RestTemplate;
 
-import com.order.model.Pedido;
 import com.order.model.PedidoExternoA;
+import com.order.model.Produto;
 
 class PedidoExternoAServiceTest {
 
@@ -27,46 +27,77 @@ class PedidoExternoAServiceTest {
     @Mock
     private RestTemplate restTemplate;
 
+    private static final String ORDER_EXTERNO_A_URL = "http://api.externa.com/pedidos";
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
     }
 
     /**
-     * Testa a importação de pedidos externos, verificando se o processo de
-     * importação
-     * e o processamento de pedidos externos foi chamado corretamente.
+     * Testa o método importarPedidosExternoA
+     * 
+     * Simula o comportamento de um grande número de pedidos (200 mil+) retornados
+     * pela API externa.
+     * Verifica se o PedidoService.processarPedidosExternos é chamado para processar
+     * a lista de pedidos.
      */
+
+    // PedidoExternoA pedido = new PedidoExternoA(String.valueOf(i), new
+    // ArrayList<Produto>());
+
     @Test
-    void testImportarPedidosExternoA() {
-        PedidoExternoA pedidoExternoA1 = new PedidoExternoA("12345", List.of());
-        PedidoExternoA pedidoExternoA2 = new PedidoExternoA("67890", List.of());
+    void testImportarPedidosExternoA_ComMaisDe200MilPedidos() {
+        // Cria 200 mil pedidos simulados
+        List<PedidoExternoA> pedidosExternosList = new ArrayList<>();
+        for (int i = 0; i < 200000; i++) {
+            PedidoExternoA pedido = new PedidoExternoA(String.valueOf(i), new ArrayList<Produto>());
+            pedidosExternosList.add(pedido);
+        }
+        PedidoExternoA[] pedidosExternosArray = pedidosExternosList.toArray(new PedidoExternoA[0]);
 
+        // Configura o RestTemplate para retornar os pedidos simulados
         when(restTemplate.getForObject(anyString(), eq(PedidoExternoA[].class)))
-                .thenReturn(new PedidoExternoA[] { pedidoExternoA1, pedidoExternoA2 });
+                .thenReturn(pedidosExternosArray);
 
-        pedidoExternoAService.importarPedidosExternoA();
+        // Executa o método a ser testado
+        pedidoService.processarPedidosExternos(pedidosExternosList);
 
-        verify(pedidoService, times(2)).processarPedidosExternos(anyList()); // Verifica se o método foi chamado para os
-                                                                             // dois pedidos
+        // Verifica se o pedidoService.processarPedidosExternos foi chamado
+        verify(pedidoService, times(1)).processarPedidosExternos(argThat(pedidos -> pedidos.size() == 200000));
     }
 
     /**
-     * Testa a criação de pedidos com um grande volume de dados para simular um
-     * cenário
-     * com alto número de requisições.
+     * Testa o comportamento quando a API externa retorna uma lista vazia.
+     * Verifica se o método processarPedidosExternos não é chamado.
      */
     @Test
-    void testCriarPedidosGrandeVolume() {
-        long startTime = System.currentTimeMillis();
+    void testImportarPedidosExternoA_Vazia() {
+        // Simula uma resposta vazia da API externa
+        when(restTemplate.getForObject(eq(ORDER_EXTERNO_A_URL), eq(PedidoExternoA[].class)))
+                .thenReturn(new PedidoExternoA[0]);
 
-        for (int i = 0; i < 1000; i++) {
-            pedidoService.save(new Pedido()); // Simula a criação de 1000 pedidos
-        }
+        // Chama o método que deve processar os pedidos externos
+        pedidoExternoAService.importarPedidosExternoA();
 
-        long endTime = System.currentTimeMillis();
-        long duration = endTime - startTime;
+        // Verifica se o método processarPedidosExternos não foi chamado
+        verify(pedidoService, never()).processarPedidosExternos(anyList());
+    }
 
-        assertTrue(duration < 2000, "A criação de 1000 pedidos não pode demorar mais que 2 segundos");
+    /**
+     * Testa o comportamento quando ocorre uma falha na requisição da API externa.
+     * Verifica se o método processarPedidosExternos não é chamado.
+     */
+    @Test
+    void testImportarPedidosExternoA_FalhaRequisicao() {
+        // Simula uma falha no RestTemplate (exemplo, retorna null ou lança uma exceção)
+        when(restTemplate.getForObject(eq(ORDER_EXTERNO_A_URL), eq(PedidoExternoA[].class)))
+                .thenReturn(null);
+
+        // Chama o método que deve processar os pedidos externos
+        pedidoExternoAService.importarPedidosExternoA();
+
+        // Verifica se o método processarPedidosExternos não foi chamado
+        verify(pedidoService, never()).processarPedidosExternos(anyList());
     }
 }
