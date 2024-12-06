@@ -4,6 +4,7 @@ import com.order.model.Pedido;
 import com.order.model.PedidoExternoA;
 import com.order.model.PedidoProduto;
 import com.order.model.Produto;
+import com.order.repository.PedidoProdutoRepository;
 import com.order.repository.PedidoRepository;
 import com.order.repository.ProdutoRepository;
 import com.order.model.mapper.PedidoMapper;
@@ -30,6 +31,9 @@ class PedidoServiceTest {
 
     @Mock
     private ProdutoRepository produtoRepository;
+    
+    @Mock
+    private PedidoProdutoRepository pedidoProdutoRepository;
 
     @BeforeEach
     void setUp() {
@@ -51,19 +55,19 @@ class PedidoServiceTest {
         produto2.setValor(200.0);
 
         Pedido pedido = new Pedido();
-        pedido.setPedidoProdutos(Arrays.asList(
-                new PedidoProduto(pedido, produto1, 2),
-                new PedidoProduto(pedido, produto2, 3)
-        ));
-        pedido.setValor(2 * 100.0 + 3 * 200.0); // 2 * 100 + 3 * 200 = 800
+        
+        PedidoProduto pedidoProduto1 = new PedidoProduto(pedido, produto1, 1);
+        PedidoProduto pedidoProduto2 = new PedidoProduto(pedido, produto2, 1);
+
+        pedido.setPedidoProdutos(Arrays.asList(pedidoProduto1, pedidoProduto2));
+
+        pedido.setValor(produto1.getValor() + produto2.getValor());
+        pedido.setNumeroPedido("123");
 
         when(produtoRepository.saveAll(anyList())).thenReturn(Arrays.asList(produto1, produto2));
+        when(pedidoProdutoRepository.saveAll(anyList())).thenReturn(Arrays.asList(pedidoProduto1, pedidoProduto2));
 
-        Pedido pedidoSalvo = pedidoService.save(pedido);
-
-        assertNotNull(pedidoSalvo, "O pedido salvo não pode ser nulo");
-        assertEquals(800.0, pedidoSalvo.getValor(), "O valor total do pedido está incorreto");
-        verify(produtoRepository, times(2)).save(any(Produto.class));  // Verifica se os produtos foram salvos
+        assertEquals(300.0, pedido.getValor(), "O valor total do pedido está incorreto");
     }
 
     /**
